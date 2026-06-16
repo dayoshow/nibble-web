@@ -11,8 +11,8 @@ export async function signUpWithEmail({ email, password, firstName, lastName, ro
   })
   if (error) throw error
 
-  // Manually create profile row after signup
   if (data?.user) {
+    // Create profile row
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -22,10 +22,26 @@ export async function signUpWithEmail({ email, password, firstName, lastName, ro
         role: role,
         status: 'active',
       })
-    
-    // Ignore duplicate error in case profile already exists
+
     if (profileError && !profileError.message.includes('duplicate')) {
       throw profileError
+    }
+
+    // If registering as vendor, auto-create vendor row
+    if (role === 'vendor') {
+      const { error: vendorError } = await supabase
+        .from('vendors')
+        .insert({
+          profile_id: data.user.id,
+          name: `${firstName}'s Kitchen`,
+          description: 'Campus food vendor',
+          status: 'active',
+          is_open: false,
+        })
+
+      if (vendorError && !vendorError.message.includes('duplicate')) {
+        throw vendorError
+      }
     }
   }
 
