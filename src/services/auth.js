@@ -10,6 +10,25 @@ export async function signUpWithEmail({ email, password, firstName, lastName, ro
     },
   })
   if (error) throw error
+
+  // Manually create profile row after signup
+  if (data?.user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        role: role,
+        status: 'active',
+      })
+    
+    // Ignore duplicate error in case profile already exists
+    if (profileError && !profileError.message.includes('duplicate')) {
+      throw profileError
+    }
+  }
+
   return data
 }
 
